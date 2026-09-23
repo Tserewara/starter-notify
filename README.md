@@ -1,16 +1,25 @@
 # Bellbird notifications
 
-Bellbird sends marketplace notifications through push, email, SMS, and in-app channels. The local lab has an API, a Redis-backed queue, one worker, and fake providers whose latency and failure mode can be changed while the services run.
+Bellbird sends marketplace notifications over push, email, SMS and in-app. This lab runs an API, a Redis-backed queue, one worker, and a fake provider whose latency and failures you can change while everything is running.
 
 ## Run
 
-You need Docker with Compose. Run `make up`, then `make test`. The API is at `http://localhost:58002`; the provider control API is at `http://localhost:58001`.
+You need Docker with Compose. `make up` starts it all and `make test` runs the checks. The API is on `http://localhost:58002` and the provider's control API on `http://localhost:58001`. `make down` removes the local volume.
 
-`make notify` queues fifteen email newsletters followed by one urgent push notification and prints delivery metrics. `POST /_control` on the provider accepts `{"latency_ms": 250}` or `{"fail": true}`. The API's `/metrics` endpoint reports queue depth, deliveries, lost notifications, the dead-letter list length, provider calls, and push p95 delivery time.
+## Load and break it
 
-The starter keeps the queue and delivery record in Redis. `make down` removes the local volume.
+`make notify` queues fifteen email newsletters, then one urgent push carrying a login code, waits for delivery and prints the metrics:
+
+```
+{"delivered": N, "lost": N, "queue_depth": N, "dlq": N, "provider_calls": N, "otp_p95_ms": N}
+```
+
+`make metrics` prints the same counters at any time. `otp_p95_ms` is the p95 delivery time of push notifications.
+
+The provider's `POST /_control` takes `{"latency_ms": 250}` or `{"fail": true}`. `make provider-outage` sends the second one; send `{"fail": false}` to bring it back.
+
+The queue and the delivery records both live in Redis.
 
 ## License
 
 MIT. See `LICENSE`.
-
