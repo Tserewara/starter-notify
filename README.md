@@ -17,9 +17,12 @@ Redis and the provider. The service is on `http://localhost:58002`, the
 provider on `http://localhost:58001`. `make contract` runs the contract
 tests; `make down` removes everything.
 
-`POST /notifications` takes `{"channel": "email", "body": "hello"}`, plus
-`user_id` and `urgency` (`urgent`, `normal` or `low`), and answers 202 with
-an id. `GET /notifications/{id}` shows its status.
+`POST /notifications` takes `{"channel": "email", "body": "hello"}`, and
+optionally `user_id` (default `user-1`) and `urgency` (`urgent`, `normal` or
+`low`; default `normal`). It answers 202 with an id. `GET /notifications/{id}`
+shows the notification with its `status`: `queued`, `delivered`, or `failed`
+with an `error`. The contract checks only `queued` and `delivered`; any other
+status or field you add is yours to decide.
 
 ## Load and break it
 
