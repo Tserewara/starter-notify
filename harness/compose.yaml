@@ -1,0 +1,46 @@
+# The world around the notification service. Only HTTP crosses into
+# service/: the harness sends notifications to its API and reads what the
+# fake provider received.
+name: bgym-notify
+
+services:
+  service:
+    build: ../service
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PROVIDER_URL: http://provider:8001
+    ports:
+      - "58002:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      provider:
+        condition: service_started
+
+  redis:
+    image: redis:7.4.1-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  provider:
+    build: {context: ., dockerfile: tools.Dockerfile}
+    command: ["python3", "provider.py"]
+    ports:
+      - "58001:8001"
+
+  tools:
+    build: {context: ., dockerfile: tools.Dockerfile}
+    profiles: ["tools"]
+    environment:
+      SERVICE_URL: http://service:8000
+      PROVIDER_URL: http://provider:8001
+
+  contract:
+    build: ../contract
+    profiles: ["tools"]
+    environment:
+      SERVICE_URL: http://service:8000
+      PROVIDER_URL: http://provider:8001

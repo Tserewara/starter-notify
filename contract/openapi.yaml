@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Bellbird notifications
+  version: 1.0.0
+  description: >
+    The notification service as the starter ships it. A port listens on port
+    8000 inside its container, reads REDIS_URL and PROVIDER_URL, and hands each
+    notification to the provider with POST {PROVIDER_URL}/send, a JSON body
+    carrying at least `id`, `user_id`, `channel`, `body` and `urgency`. The
+    provider answers 200 when it accepts and 503 while it is down.
+paths:
+  /health:
+    get:
+      responses:
+        "200": {description: The service is up.}
+  /notifications:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel, body]
+              properties:
+                user_id: {type: string, default: user-1}
+                channel: {type: string, description: "email, sms, push or in_app"}
+                body: {type: string, minLength: 1}
+                urgency: {type: string, description: "urgent, normal or low", default: normal}
+      responses:
+        "202":
+          description: Accepted for delivery.
+          content:
+            application/json:
+              schema: {type: object, required: [id, status], properties: {id: {type: string}, status: {type: string}}}
+        "422": {description: Invalid notification.}
+  /notifications/{id}:
+    get:
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      responses:
+        "200":
+          description: The notification and its current status (queued, delivered, and whatever else the service records).
+          content:
+            application/json:
+              schema: {type: object, required: [id, status], properties: {id: {type: string}, status: {type: string}}}
+        "404": {description: No such notification.}
